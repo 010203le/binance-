@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>幣安合約帳戶面板</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f9;
+            color: #333;
+        }
+        h1 {
+            text-align: center;
+        }
+        .section {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f8f8f8;
+        }
+        .balance {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #e0f7fa;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>幣安合約帳戶面板</h1>
+
+    <div class="balance" id="total-balance">
+        正在載入餘額...
+    </div>
+
+    <div class="section" id="positions-section">
+        <h2>持倉</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>交易對</th>
+                    <th>目前持倉</th>
+                    <th>開倉價</th>
+                    <th>未實現盈虧</th>
+                    <th>合約類別</th>
+                </tr>
+            </thead>
+            <tbody id="positions-table"></tbody>
+        </table>
+    </div>
+
+    <div class="section" id="funding-history-section">
+        <h2>資金費率歷史</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>資產</th>
+                    <th>類別</th>
+                    <th>金額</th>
+                    <th>時間</th>
+                    <th>合約類別</th>
+                </tr>
+            </thead>
+            <tbody id="funding-history-table"></tbody>
+        </table>
+    </div>
+
+    <script>
+        async function fetchData(url) {
+            const response = await fetch(url);
+            return response.json();
+        }
+
+        // 加載合約帳戶總餘額
+        async function loadTotalBalance() {
+            const data = await fetchData('http://127.0.0.1:5000/account-balance');
+            const totalBalance = data.total_balance.toFixed(2); // 保留兩位小數
+            const balanceDiv = document.getElementById('total-balance');
+            balanceDiv.textContent = `合約帳戶餘額: ${totalBalance} USD`;
+        }
+
+        // 過濾掉 Position Amount 為 0 的艙位
+        async function loadPositions() {
+            const data = await fetchData('http://127.0.0.1:5000/positions');
+            const table = document.getElementById('positions-table');
+            table.innerHTML = '';
+
+            ['usd', 'coin'].forEach(contractType => {
+                data[contractType].forEach(position => {
+                    if (parseFloat(position.positionAmt) !== 0) {
+                        table.innerHTML += `
+                            <tr>
+                                <td>${position.symbol}</td>
+                                <td>${position.positionAmt}</td>
+                                <td>${position.entryPrice}</td>
+                                <td>${position.unRealizedProfit}</td>
+                                <td>${contractType === 'usd' ? 'USDⓈ-M' : 'COIN-M'}</td>
+                            </tr>
+                        `;
+                    }
+                });
+            });
+        }
+
+        // 加載 Funding History
+        async function loadFundingHistory() {
+            const data = await fetchData('http://127.0.0.1:5000/funding-history');
+            const table = document.getElementById('funding-history-table');
+            table.innerHTML = '';
+
+            ['usd', 'coin'].forEach(contractType => {
+                data[contractType].forEach(item => {
+                    table.innerHTML += `
+                        <tr>
+                            <td>${item.asset}</td>
+                            <td>${item.incomeType}</td>
+                            <td>${item.income}</td>
+                            <td>${new Date(item.time).toLocaleString()}</td>
+                            <td>${contractType === 'usd' ? 'USDⓈ-M' : 'COIN-M'}</td>
+                        </tr>
+                    `;
+                });
+            });
+        }
+
+        // 初始化
+        async function loadData() {
+            await loadTotalBalance(); // 加載總餘額
+            await loadPositions();
+            await loadFundingHistory();
+        }
+
+        loadData();
+    </script>
+</body>
+</html>
