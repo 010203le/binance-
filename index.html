@@ -44,6 +44,15 @@
             font-size: 18px;
             font-weight: bold;
         }
+        /* 響應式樣式 */
+        @media (max-width: 600px) {
+            table, th, td {
+                font-size: 12px;
+            }
+            th, td {
+                padding: 5px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -59,10 +68,11 @@
             <thead>
                 <tr>
                     <th>交易對</th>
-                    <th>目前持倉</th>
+                    <th>持倉量</th>
                     <th>開倉價</th>
+                    <th>最新價</th> <!-- 新增標記價格 -->
                     <th>未實現盈虧</th>
-                    <th>合約類別</th>
+                    <th>合約</th>
                 </tr>
             </thead>
             <tbody id="positions-table"></tbody>
@@ -75,10 +85,9 @@
             <thead>
                 <tr>
                     <th>資產</th>
-                    <th>類別</th>
                     <th>金額</th>
                     <th>時間</th>
-                    <th>合約類別</th>
+                    <th>合約</th>
                 </tr>
             </thead>
             <tbody id="funding-history-table"></tbody>
@@ -93,15 +102,15 @@
 
         // 加載合約帳戶總餘額
         async function loadTotalBalance() {
-            const data = await fetchData('http://127.0.0.1:5000/account-balance');
+            const data = await fetchData('/api/account-balance');
             const totalBalance = data.total_balance.toFixed(2); // 保留兩位小數
             const balanceDiv = document.getElementById('total-balance');
-            balanceDiv.textContent = `合約帳戶餘額: ${totalBalance} USD`;
+            balanceDiv.textContent = `合約帳戶餘額: ${totalBalance} USD (未計入未實現盈虧)`;
         }
 
         // 過濾掉 Position Amount 為 0 的艙位
         async function loadPositions() {
-            const data = await fetchData('http://127.0.0.1:5000/positions');
+            const data = await fetchData('/api/positions');
             const table = document.getElementById('positions-table');
             table.innerHTML = '';
 
@@ -112,7 +121,8 @@
                             <tr>
                                 <td>${position.symbol}</td>
                                 <td>${position.positionAmt}</td>
-                                <td>${position.entryPrice}</td>
+                                <td>${parseFloat(position.entryPrice).toFixed(1)}</td>
+                                <td>${parseFloat(position.markPrice).toFixed(1)}</td> <!-- 標記價格 -->
                                 <td>${position.unRealizedProfit}</td>
                                 <td>${contractType === 'usd' ? 'USDⓈ-M' : 'COIN-M'}</td>
                             </tr>
@@ -124,7 +134,7 @@
 
         // 加載 Funding History
         async function loadFundingHistory() {
-            const data = await fetchData('http://127.0.0.1:5000/funding-history');
+            const data = await fetchData('/api/funding-history');
             const table = document.getElementById('funding-history-table');
             table.innerHTML = '';
 
@@ -133,7 +143,7 @@
                     table.innerHTML += `
                         <tr>
                             <td>${item.asset}</td>
-                            <td>${item.incomeType}</td>
+                            
                             <td>${item.income}</td>
                             <td>${new Date(item.time).toLocaleString()}</td>
                             <td>${contractType === 'usd' ? 'USDⓈ-M' : 'COIN-M'}</td>
