@@ -53,7 +53,7 @@ def get_account_balance():
         # 計算資產餘額
         for item in balance_list:
             asset = item['asset']
-            balance = float(item['crossWalletBalance'])
+            balance = float(item['balance'])+float(item['crossUnPnl'])
             if balance > 0:
                 seen_assets.add(asset)  # 標記該資產已處理
                 if asset == "USDT":
