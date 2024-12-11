@@ -54,7 +54,7 @@ def get_account_balance():
         for item in balance_list:
             asset = item['asset']
             balance = float(item['balance'])+float(item['crossUnPnl'])
-            if balance > 0:
+            if balance != 0:
                 seen_assets.add(asset)  # 標記該資產已處理
                 if asset == "USDT":
                     total_usd_balance += balance
